@@ -9,6 +9,7 @@
 - `/prepare-commit`
 - `/conventional-commit`
 - `/commit-check`
+- `/comment-check`
 
 若命令未自动生效，请在会话开头补一句：
 `请加载并遵守仓库根目录 .opencode.md 的规则。`
