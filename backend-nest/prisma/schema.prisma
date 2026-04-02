@@ -7,35 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum SharePermission {
-  view
-  edit
-}
-
 model User {
-  id       BigInt        @id @default(autoincrement())
-  username String        @unique
-  email    String        @unique
-  password String
-  canvases Canvas[]
-  shares   CanvasShare[]
+  id        Int           @id @default(autoincrement())
+  username  String        @unique
+  email     String        @unique
+  password  String
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  canvases  Canvas[]
+  shares    CanvasShare[]
 
   @@map("users")
 }
 
 model Canvas {
-  id                BigInt        @id @default(autoincrement())
-  userId            BigInt        @map("user_id")
-  userName          String?       @map("user_name")
-  title             String?
-  description       String?
-  nodes             Json          @default("[]")
-  edges             Json          @default("[]")
-  settings          Json          @default("{}")
+  id                Int           @id @default(autoincrement())
+  userId            Int           @map("user_id")
+  title             String
+  nodes             Json
+  edges             Json
+  thumbnailFileName String?       @map("thumbnail_file_name")
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
-  thumbnailFileName String?       @map("thumbnail_file_name")
-  owner             User          @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   shares            CanvasShare[]
 
   @@index([userId])
@@ -43,12 +37,14 @@ model Canvas {
 }
 
 model CanvasShare {
-  id         BigInt          @id @default(autoincrement())
-  canvasId   BigInt          @map("canvas_id")
-  userId     BigInt          @map("user_id")
-  permission SharePermission @default(view)
-  canvas     Canvas          @relation(fields: [canvasId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id         Int      @id @default(autoincrement())
+  canvasId   Int      @map("canvas_id")
+  userId     Int      @map("user_id")
+  permission String   @default("view")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  canvas     Canvas   @relation(fields: [canvasId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([canvasId, userId])
   @@index([userId])
