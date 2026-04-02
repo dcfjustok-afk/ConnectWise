@@ -4,84 +4,49 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { BusinessException } from '../exceptions/business.exception';
-
-type ErrorEnvelope = {
-  ok: false;
-  code: number;
-  msg: string;
-  data: null;
-};
+import { BusinessException } from '../exceptions';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(GlobalExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const { status, body } = this.normalizeException(exception);
-    response.status(status).json(body);
-  }
 
-  private normalizeException(exception: unknown): {
-    status: number;
-    body: ErrorEnvelope;
-  } {
+    let code: number;
+    let msg: string;
+    let httpStatus: number;
+
     if (exception instanceof BusinessException) {
-      return {
-        status: exception.getStatus(),
-        body: {
-          ok: false,
-          code: exception.businessCode,
-          msg: exception.message,
-          data: null,
-        },
-      };
+      code = exception.bizCode;
+      msg = exception.message;
+      httpStatus = exception.getStatus();
+    } else if (exception instanceof HttpException) {
+      httpStatus = exception.getStatus();
+      code = httpStatus;
+      const exResponse = exception.getResponse();
+      msg =
+        typeof exResponse === 'string'
+          ? exResponse
+          : (exResponse as { message?: string }).message ?? exception.message;
+    } else {
+      httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+      code = httpStatus;
+      msg = 'Internal Server Error';
+      this.logger.error(
+        'Unhandled exception',
+        exception instanceof Error ? exception.stack : String(exception),
+      );
     }
 
-    if (exception instanceof HttpException) {
-      const status = exception.getStatus();
-      const payload = exception.getResponse();
-      const message = this.extractHttpMessage(payload);
-
-      return {
-        status,
-        body: {
-          ok: false,
-          code: status,
-          msg: message,
-          data: null,
-        },
-      };
-    }
-
-    return {
-      status: HttpStatus.INTERNAL_SERVER_ERROR,
-      body: {
-        ok: false,
-        code: HttpStatus.INTERNAL_SERVER_ERROR,
-        msg: 'Internal server error',
-        data: null,
-      },
-    };
-  }
-
-  private extractHttpMessage(payload: unknown): string {
-    if (typeof payload === 'string') {
-      return payload;
-    }
-
-    if (typeof payload === 'object' && payload !== null) {
-      const candidate = (payload as { message?: string | string[] }).message;
-      if (Array.isArray(candidate)) {
-        return candidate.join(', ');
-      }
-      if (typeof candidate === 'string') {
-        return candidate;
-      }
-    }
-
-    return 'Request failed';
+    response.status(httpStatus).json({
+      code,
+      msg,
+      data: null,
+    });
   }
 }
