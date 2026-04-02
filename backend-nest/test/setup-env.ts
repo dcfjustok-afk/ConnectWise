@@ -1,0 +1,10 @@
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
+process.env.REDIS_HOST = 'localhost';
+process.env.REDIS_PORT = '6379';
+process.env.SESSION_SECRET = 'test-secret-for-e2e-minimum-16';
+process.env.MINIO_ENDPOINT = 'http://localhost:9000';
+process.env.MINIO_ACCESS_KEY = 'minioadmin';
+process.env.MINIO_SECRET_KEY = 'minioadmin';
+process.env.AI_PROVIDER = 'openai';
+process.env.AI_BASE_URL = 'http://localhost:11434';
+process.env.AI_MODEL = 'gpt-4';
