@@ -7,4 +7,5 @@ export default registerAs('ai', () => ({
   model: process.env.AI_MODEL ?? 'gpt-4.1-mini',
   timeoutMs: Number(process.env.AI_TIMEOUT_MS ?? 30000),
   maxRetries: Number(process.env.AI_MAX_RETRIES ?? 2),
+  maxRequestsPerMinute: Number(process.env.AI_MAX_RPM ?? 60),
 }));
