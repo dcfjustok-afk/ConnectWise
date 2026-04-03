@@ -1,0 +1,51 @@
+@import '@xyflow/react/dist/style.css';
+@import "tailwindcss";
+/* 值为渐变，不起作用 */
+@theme {
+  --color-mint-550: bg-linear-to-r from-cyan-700 via-blue-500 to-indigo-600;
+}
+.bg-theme-breeze {
+  background: linear-gradient( right, #38bdf8, #0891b2, #0ea5e9);
+}
+
+.bg-theme-sunset {
+  background: linear-gradient(to right, #f87171, #fbbf24, #fcd34d);
+}
+
+.bg-theme-dusk {
+  background: linear-gradient(to bottom, #15803d, #064e3b, #022c22);
+}
+
+.bg-theme-dream {
+  background: linear-gradient(45deg, #581c87, #831843, #be123c);
+}
+
+.bg-theme-haze {
+  background: linear-gradient(to right, #b45309, #ea580c, #f59e0b);
+}
+
+html,
+body {
+  margin: 0;
+  font-family: sans-serif;
+  box-sizing: border-box;
+}
+
+/* 自定义滚动条样式 (仅在 WebKit 浏览器中生效) */
+textarea::-webkit-scrollbar {
+  width: 8px; /* 滚动条宽度 */
+}
+
+textarea::-webkit-scrollbar-track {
+  background: rgba(241, 241, 241, 0.3); /* 滚动条轨道背景色，半透明 */
+  border-radius: 10px; /* 轨道圆角 */
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background: rgba(136, 136, 136, 0.3); /* 滚动条滑块颜色，半透明 */
+  border-radius: 10px; /* 滑块圆角 */
+}
+
+textarea::-webkit-scrollbar-thumb:hover {
+  background: rgba(85, 85, 85, 0.5); /* 鼠标悬停时滑块颜色，透明度稍高 */
+}
