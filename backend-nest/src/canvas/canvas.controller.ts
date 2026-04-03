@@ -7,11 +7,15 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CanvasService } from './canvas.service';
 import { CreateCanvasDto } from './dto/create-canvas.dto';
 import { UpdateCanvasDto } from './dto/update-canvas.dto';
+import { thumbnailMulterOptions } from './upload.config';
 
 interface SessionUser {
   userId: number;
@@ -66,5 +70,15 @@ export class CanvasController {
     @CurrentUser() user: SessionUser,
   ) {
     return this.canvasService.remove(canvasId, user.userId);
+  }
+
+  @Post('uploadThumbnail')
+  @UseInterceptors(FileInterceptor('thumbnail', thumbnailMulterOptions))
+  uploadThumbnail(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('canvasId', ParseIntPipe) canvasId: number,
+    @CurrentUser() user: SessionUser,
+  ) {
+    return this.canvasService.uploadThumbnail(canvasId, user.userId, file);
   }
 }
