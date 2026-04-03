@@ -6,7 +6,11 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('search')
-  async search(@Query('keyword') keyword: string) {
-    return this.userService.search(keyword);
+  async search(
+    @Query('username') username?: string,
+    @Query('keyword') keyword?: string,
+  ) {
+    const q = username ?? keyword ?? '';
+    return this.userService.search(q);
   }
 }

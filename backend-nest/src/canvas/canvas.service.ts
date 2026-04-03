@@ -2,13 +2,17 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { BizErrorCode, BusinessException } from '../common/exceptions';
 import { canRead, canWrite } from '../common/policy/canvas-permission.policy';
+import { MinioService } from '../minio/minio.service';
 import { CanvasRepository } from './canvas.repository';
 import { CreateCanvasDto } from './dto/create-canvas.dto';
 import { UpdateCanvasDto } from './dto/update-canvas.dto';
 
 @Injectable()
 export class CanvasService {
-  constructor(private readonly canvasRepository: CanvasRepository) {}
+  constructor(
+    private readonly canvasRepository: CanvasRepository,
+    private readonly minioService: MinioService,
+  ) {}
 
   createForUser(pathUserId: number, currentUserId: number, dto: CreateCanvasDto) {
     this.ensurePathUser(pathUserId, currentUserId);
@@ -20,9 +24,13 @@ export class CanvasService {
     );
   }
 
-  findByUser(pathUserId: number, currentUserId: number) {
+  async findByUser(pathUserId: number, currentUserId: number) {
     this.ensurePathUser(pathUserId, currentUserId);
-    return this.canvasRepository.findByOwner(pathUserId);
+    const canvases = await this.canvasRepository.findByOwner(pathUserId);
+    return canvases.map(({ user, ...rest }) => ({
+      ...rest,
+      userName: user?.username ?? null,
+    }));
   }
 
   async findOne(canvasId: number, currentUserId: number) {
@@ -90,5 +98,34 @@ export class CanvasService {
     if (pathUserId !== currentUserId) {
       throw BusinessException.forbidden(BizErrorCode.CANVAS_ACCESS_DENIED, '仅可访问自己的画布列表');
     }
+  }
+
+  async uploadThumbnail(canvasId: number, currentUserId: number, file: Express.Multer.File) {
+    if (!file) {
+      throw new BusinessException(BizErrorCode.BAD_REQUEST, '缺少文件');
+    }
+    const canvas = await this.canvasRepository.findById(canvasId);
+    if (!canvas) {
+      throw BusinessException.notFound(BizErrorCode.CANVAS_NOT_FOUND, '画布不存在');
+    }
+    if (canvas.userId !== currentUserId) {
+      const perm = await this.canvasRepository.findSharePermission(canvasId, currentUserId);
+      if (!canWrite(perm)) {
+        throw BusinessException.forbidden(BizErrorCode.CANVAS_ACCESS_DENIED, '无权上传缩略图');
+      }
+    }
+
+    const ext = file.originalname.split('.').pop() ?? 'png';
+    const objectName = `thumbnails/${canvasId}_${Date.now()}.${ext}`;
+
+    // 删除旧缩略图
+    if (canvas.thumbnailFileName) {
+      try { await this.minioService.removeObject(canvas.thumbnailFileName); } catch { /* ignore */ }
+    }
+
+    await this.minioService.putObject(objectName, file.buffer, file.size, file.mimetype);
+    await this.canvasRepository.updateById(canvasId, { thumbnailFileName: objectName });
+
+    return { thumbnailFileName: objectName };
   }
 }

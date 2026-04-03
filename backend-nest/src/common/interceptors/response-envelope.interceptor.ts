@@ -7,6 +7,7 @@ import {
 import { Observable, map } from 'rxjs';
 
 export interface ResponseEnvelope<T> {
+  ok: boolean;
   code: number;
   msg: string;
   data: T;
@@ -22,6 +23,7 @@ export class ResponseEnvelopeInterceptor<T>
   ): Observable<ResponseEnvelope<T>> {
     return next.handle().pipe(
       map((data) => ({
+        ok: true,
         code: 200,
         msg: 'success',
         data,

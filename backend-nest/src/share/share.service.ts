@@ -36,8 +36,14 @@ export class ShareService {
       throw BusinessException.forbidden(BizErrorCode.SHARE_PERMISSION_DENIED, '仅画布所有者可创建分享');
     }
 
+    // 兼容旧字段 userName 和新字段 toUsername
+    const targetUsername = dto.toUsername ?? dto.userName ?? '';
+    if (!targetUsername) {
+      throw new BusinessException(BizErrorCode.BAD_REQUEST, '目标用户名不能为空');
+    }
+
     // 校验目标用户存在
-    const targetUser = await this.shareRepository.findUserByUsername(dto.toUsername);
+    const targetUser = await this.shareRepository.findUserByUsername(targetUsername);
     if (!targetUser) {
       throw new BusinessException(BizErrorCode.SHARE_NOT_FOUND, '分享目标用户不存在');
     }
@@ -57,7 +63,16 @@ export class ShareService {
   }
 
   async update(currentUserId: number, dto: UpdateShareDto) {
-    const share = await this.shareRepository.findById(dto.id);
+    let share: { id: number; canvasId: number; userId: number; permission: string } | null = null;
+
+    if (dto.id) {
+      // 新模式：通过 share 主键 ID 查找
+      share = await this.shareRepository.findById(dto.id);
+    } else if (dto.userId && dto.canvasId) {
+      // 兼容旧前端：通过 userId + canvasId 复合键查找
+      share = await this.shareRepository.findByCanvasAndUser(dto.canvasId, dto.userId);
+    }
+
     if (!share) {
       throw BusinessException.notFound(BizErrorCode.SHARE_NOT_FOUND, '分享记录不存在');
     }
@@ -68,7 +83,7 @@ export class ShareService {
       throw BusinessException.forbidden(BizErrorCode.SHARE_PERMISSION_DENIED, '仅画布所有者可修改分享权限');
     }
 
-    return this.shareRepository.updateById(dto.id, dto.permission);
+    return this.shareRepository.updateById(share.id, dto.permission);
   }
 
   async remove(shareId: number, currentUserId: number) {

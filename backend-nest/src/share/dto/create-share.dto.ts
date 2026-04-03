@@ -1,14 +1,21 @@
-import { IsIn, IsInt, IsNotEmpty, IsString, MaxLength, Min } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreateShareDto {
   @IsInt()
   @Min(1)
   canvasId!: number;
 
+  /** 兼容旧前端字段名 userName */
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(50)
-  toUsername!: string;
+  userName?: string;
+
+  /** 新字段名 */
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  toUsername?: string;
 
   @IsString()
   @IsNotEmpty()

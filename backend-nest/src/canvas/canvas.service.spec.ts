@@ -3,6 +3,7 @@ import { CanvasService } from './canvas.service';
 import { CanvasRepository } from './canvas.repository';
 import { BusinessException } from '../common/exceptions';
 import { BizErrorCode } from '../common/exceptions';
+import { MinioService } from '../minio/minio.service';
 
 describe('CanvasService', () => {
   let service: CanvasService;
@@ -43,6 +44,7 @@ describe('CanvasService', () => {
       providers: [
         CanvasService,
         { provide: CanvasRepository, useValue: repo },
+        { provide: MinioService, useValue: {} },
       ],
     }).compile();
 
@@ -84,15 +86,15 @@ describe('CanvasService', () => {
 
   describe('findByUser', () => {
     it('应返回用户的画布列表', async () => {
-      repo.findByOwner.mockResolvedValue([mockCanvas]);
+      repo.findByOwner.mockResolvedValue([{ ...mockCanvas, user: { username: 'alice' } }]);
 
       const result = await service.findByUser(10, 10);
-      expect(result).toEqual([mockCanvas]);
+      expect(result).toEqual([{ ...mockCanvas, userName: 'alice' }]);
       expect(repo.findByOwner).toHaveBeenCalledWith(10);
     });
 
-    it('路径 userId 与当前用户不一致时应拒绝', () => {
-      expect(() => service.findByUser(99, 10)).toThrow(BusinessException);
+    it('路径 userId 与当前用户不一致时应拒绝', async () => {
+      await expect(service.findByUser(99, 10)).rejects.toThrow(BusinessException);
     });
   });
 
@@ -268,11 +270,11 @@ describe('CanvasService', () => {
       await expect(service.remove(1, 30)).rejects.toThrow(BusinessException);
     });
 
-    it('ensurePathUser 严格匹配', () => {
+    it('ensurePathUser 严格匹配', async () => {
       // createForUser: pathUserId !== currentUserId → 拒绝
       expect(() => service.createForUser(1, 2, { title: 'X' })).toThrow(BusinessException);
       // findByUser: pathUserId !== currentUserId → 拒绝
-      expect(() => service.findByUser(1, 2)).toThrow(BusinessException);
+      await expect(service.findByUser(1, 2)).rejects.toThrow(BusinessException);
     });
   });
 });

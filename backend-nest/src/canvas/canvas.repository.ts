@@ -41,8 +41,12 @@ export class CanvasRepository {
         title: true,
         nodes: true,
         edges: true,
+        thumbnailFileName: true,
         createdAt: true,
         updatedAt: true,
+        user: {
+          select: { username: true },
+        },
       },
     });
   }
@@ -56,6 +60,7 @@ export class CanvasRepository {
         title: true,
         nodes: true,
         edges: true,
+        thumbnailFileName: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -85,6 +90,7 @@ export class CanvasRepository {
         title: true,
         nodes: true,
         edges: true,
+        thumbnailFileName: true,
         createdAt: true,
         updatedAt: true,
       },

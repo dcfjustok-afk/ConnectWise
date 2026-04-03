@@ -6,8 +6,9 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { BusinessException } from '../exceptions';
+import { sanitizeForLog } from '../utils/log-sanitizer';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -16,6 +17,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
 
     let code: number;
     let msg: string;
@@ -38,12 +40,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       code = httpStatus;
       msg = 'Internal Server Error';
       this.logger.error(
-        'Unhandled exception',
+        `Unhandled exception [${request.method} ${request.url}] body=${JSON.stringify(sanitizeForLog(request.body))}`,
         exception instanceof Error ? exception.stack : String(exception),
       );
     }
 
     response.status(httpStatus).json({
+      ok: false,
       code,
       msg,
       data: null,
