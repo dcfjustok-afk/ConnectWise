@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { AppService, HealthResult } from './app.service';
 import { Public } from './auth/decorators/public.decorator';
 
 @Controller()
@@ -8,7 +8,7 @@ export class AppController {
 
   @Public()
   @Get('health')
-  health(): { status: string; service: string } {
-    return this.appService.health();
+  health(): Promise<HealthResult> {
+    return this.appService.healthCheck();
   }
 }

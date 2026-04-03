@@ -1,10 +1,12 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import session from 'express-session';
 import { RedisStore } from 'connect-redis';
 import Redis from 'ioredis';
 import { AppModule } from './app.module';
+import { AppService } from './app.service';
 import { ResponseEnvelopeInterceptor } from './common/interceptors/response-envelope.interceptor';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
@@ -75,6 +77,25 @@ async function bootstrap(): Promise<void> {
   );
   app.useGlobalInterceptors(new ResponseEnvelopeInterceptor());
   app.useGlobalFilters(new GlobalExceptionFilter());
+
+  // 共享 Redis 客户端给 AppService 做健康检查
+  const appService = app.get(AppService);
+  appService.setRedisClient(redisClient);
+
+  // Swagger — 仅非生产环境启用
+  const nodeEnv = configService.get<string>('app.nodeEnv', 'development');
+  if (nodeEnv !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('ConnectionWise API')
+      .setDescription('ConnectionWise 后端 API 文档')
+      .setVersion('1.0')
+      .addCookieAuth('connectwise.sid')
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('docs', app, document, {
+      jsonDocumentUrl: 'docs/json',
+    });
+  }
 
   await app.listen(port);
 }
